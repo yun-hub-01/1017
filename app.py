@@ -74,18 +74,19 @@ fig_annual = px.line(
 fig_annual.update_layout(legend_title="지표", hovermode="x unified")
 st.plotly_chart(fig_annual, use_container_width=True)
 
-# 2) 월별 히트맵
+# 2) 월별 히트맵 (세로축: 월 1~12, 가로축: 연도)
 st.subheader("월별 평균기온 히트맵")
 monthly_avg = df.groupby(["연도", "월"])["평균기온(℃)"].mean().unstack("월")
+monthly_avg_T = monthly_avg.T  # 행: 월(1~12), 열: 연도
 fig_heatmap = px.imshow(
-    monthly_avg,
-    x=list(range(1, 13)),
-    y=monthly_avg.index,
-    labels={"x": "월", "y": "연도", "color": "평균기온"},
+    monthly_avg_T,
+    x=monthly_avg_T.columns,
+    y=monthly_avg_T.index,
+    labels={"x": "연도", "y": "월", "color": "평균기온"},
     color_continuous_scale="RdYlBu_r",
     title="월별 평균기온 히트맵",
 )
-fig_heatmap.update_xaxes(tickmode="array", tickvals=list(range(1, 13)))
+fig_heatmap.update_xaxes(tickangle=-45)
 st.plotly_chart(fig_heatmap, use_container_width=True)
 
 # 3) 평균기온 상위 10일 / 하위 10일
