@@ -11,7 +11,6 @@ def load_data():
     df["날짜"] = pd.to_datetime(df["날짜"])
     for col in ["평균기온(℃)", "최저기온(℃)", "최고기온(℃)"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-    df = df.dropna(subset=["평균기온(℃)", "최저기온(℃)", "최고기온(℃)"])
     return df
 
 df = load_data()
@@ -19,13 +18,15 @@ df["연도"] = df["날짜"].dt.year
 df["월"] = df["날짜"].dt.month
 df["일교차(℃)"] = df["최고기온(℃)"] - df["최저기온(℃)"]
 
+# 1950~1953 결측치 포함 상태 유지(행 제거 없음)
+# 연평균 = 결측 제외 평균, 결측 연도는 NaN으로 공란 처리
 annual = (
     df.groupby("연도")["평균기온(℃)"]
-    .mean()
+    .agg(연평균기온="mean", 유효일수="count")
     .reset_index()
-    .rename(columns={"평균기온(℃)": "연평균기온"})
 )
-annual["5년 이동평균"] = annual["연평균기온"].rolling(5, center=True, min_periods=1).mean()
+annual.loc[annual["유효일수"] == 0, "연평균기온"] = float("nan")
+annual["5년 이동평균"] = annual["연평균기온"].rolling(5, center=True, min_periods=5).mean()
 
 min_year = int(annual["연도"].min())
 max_year = int(annual["연도"].max())
@@ -56,7 +57,7 @@ with col3:
 # 1) 연도별 평균기온 + 5년 이동평균
 st.title("서울 연평균기온과 5년 이동평균")
 st.caption(f"선택 구간: {start_year}년 ~ {end_year}년 (전체 데이터: {min_year}~{max_year}년)")
-st.info("1950~1953년의 결측치 행은 그래프에서 제외했습니다.")
+st.info("1950~1953년의 결측치는 공란으로 표시됩니다.")
 
 fig_annual = px.line(
     sel,
