@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import numpy as np
 
 st.set_page_config(page_title="서울 연평균 기온 분석", layout="wide")
 
@@ -77,13 +78,10 @@ with col2:
 with col3:
     st.metric("선택 구간 최저기온", f"{min_temp:.2f} ℃")
 
-# 1) 연도별 평균기온 + 5년 이동평균
+# 1) 연도별 평균기온 + 5년 이동평균 + 추세선
 st.markdown('<div id="annual-chart"></div>', unsafe_allow_html=True)
 
 st.title("서울 연평균기온과 5년 이동평균")
-st.caption(f"선택 구간: {start_year}년 ~ {end_year}년 (전체 데이터: {min_year}~{max_year}년)")
-st.info("1950~1953년의 결측치는 공란으로 표시됩니다.")
-
 fig_annual = px.line(
     sel,
     x="연도",
@@ -96,6 +94,21 @@ fig_annual = px.line(
         "연도": "연도",
     },
     color_discrete_map={"연평균기온": "#1f77b4", "5년 이동평균": "#ff7f0e"},
+)
+sel_valid = sel.dropna(subset=["연평균기온"])
+x = sel_valid["연도"].values.astype(float)
+y = sel_valid["연평균기온"].values.astype(float)
+trend_coef = np.polyfit(x, y, 1)
+trend = np.polyval(trend_coef, x)
+fig_annual.add_trace(
+    go.Scatter(
+        x=x,
+        y=trend,
+        mode="lines",
+        name="추세선",
+        line=dict(color="#d62728", dash="dash"),
+        showlegend=True,
+    )
 )
 fig_annual.update_layout(legend_title="지표", hovermode="x unified")
 st.plotly_chart(fig_annual, use_container_width=True)
